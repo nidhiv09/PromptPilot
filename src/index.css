@@ -129,20 +129,3 @@
     }
 }
 
-@keyframes moveDot{
-
-0%{
-left:0%;
-}
-
-100%{
-left:100%;
-}
-
-}
-
-.animate-\[moveDot_5s_linear_infinite\]{
-
-animation:moveDot 5s linear infinite;
-
-}

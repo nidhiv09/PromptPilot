@@ -11,7 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { useState } from "react";
 
-import fakeResponses from "@/data/fakeResponses";
+import * as api from "@/lib/api";
+import { DEFAULT_MODEL, MODELS } from "@/lib/models";
 
 import {
   Select,
@@ -32,9 +33,13 @@ import {
 export default function ProductPreview() {
 const [prompt, setPrompt] = useState("");
 
+const [model, setModel] = useState(DEFAULT_MODEL);
+
 const [loading, setLoading] = useState(false);
 
 const [response, setResponse] = useState("");
+
+const [source, setSource] = useState("");
 
 const [tokens, setTokens] = useState("--");
 
@@ -42,33 +47,27 @@ const [latency, setLatency] = useState("--");
 
 const [cost, setCost] = useState("--");
 
-const handleRunPrompt = () => {
+const handleRunPrompt = async () => {
+  if (!prompt.trim()) {
+    return;
+  }
+
   setLoading(true);
 
-  setTimeout(() => {
-    const lowerPrompt = prompt.toLowerCase();
+  try {
+    const result = await api.runPrompt(prompt, model);
 
-    const result = fakeResponses.find((item) =>
-      item.keywords.some((keyword) => lowerPrompt.includes(keyword))
-    );
-
-    if (result) {
-      setResponse(result.response);
-      setTokens(result.tokens);
-      setLatency(result.latency);
-      setCost(result.cost);
-    } else {
-      setResponse(
-        "This is a demo version of PromptPilot."
-      );
-
-      setTokens(240);
-      setLatency("1.3 sec");
-      setCost("$0.003");
-    }
-
+    setResponse(result.response);
+    setSource(result.source);
+    setTokens(result.tokens);
+    setLatency(result.latency);
+    setCost(result.cost);
+  } catch (error) {
+    setResponse(error.message);
+    setSource("");
+  } finally {
     setLoading(false);
-  }, 1500);
+  }
 };
   return (
     <section
@@ -124,8 +123,15 @@ const handleRunPrompt = () => {
               </p>
             </div>
 
-            <Badge variant="secondary">
-              Demo
+            <Badge
+              variant={source === "live" ? "outline" : "secondary"}
+              className={
+                source === "live"
+                  ? "border-emerald-500/30 text-emerald-300"
+                  : undefined
+              }
+            >
+              {source === "live" ? "Live" : "Demo"}
             </Badge>
 
           </div>
@@ -156,27 +162,24 @@ const handleRunPrompt = () => {
 
               <div className="mt-6 flex items-center justify-between">
 
-                <Select>
+                <Select
+                  value={model}
+                  onValueChange={setModel}
+                >
 
                   <SelectTrigger className="w-52 border-slate-700 bg-slate-950 text-white">
 
-                    <SelectValue placeholder="Claude Sonnet 4" />
+                    <SelectValue />
 
                   </SelectTrigger>
 
                   <SelectContent>
 
-                    <SelectItem value="claude">
-                      Claude Sonnet 4
-                    </SelectItem>
-
-                    <SelectItem value="gpt">
-                      GPT-4.1
-                    </SelectItem>
-
-                    <SelectItem value="gemini">
-                      Gemini 2.5
-                    </SelectItem>
+                    {MODELS.map((item) => (
+                      <SelectItem key={item.id} value={item.label}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
 
                   </SelectContent>
 

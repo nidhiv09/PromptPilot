@@ -12,7 +12,7 @@ const features = [
     icon: BrainCircuit,
     title: "Multi-Model Testing",
     description:
-      "Compare responses across Claude, GPT and Gemini in one place.",
+      "Compare responses across Llama and GPT-OSS models in one place.",
   },
   {
     icon: BarChart3,

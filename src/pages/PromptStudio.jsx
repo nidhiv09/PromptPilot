@@ -5,36 +5,38 @@ import PromptEditor from "@/components/studio/PromptEditor";
 import ResponseCard from "@/components/studio/ResponseCard";
 import SavedPrompts from "@/components/studio/SavedPrompts";
 
-import fakeResponses from "@/data/fakeResponses";
+import * as api from "@/lib/api";
+import { DEFAULT_MODEL } from "@/lib/models";
+
+const EMPTY_METRICS = {
+  tokens: "--",
+  latency: "--",
+  cost: "--",
+};
 
 export default function PromptStudio() {
   const [prompt, setPrompt] = useState("");
 
-  const [model, setModel] = useState("Claude Sonnet 4");
+  const [model, setModel] = useState(DEFAULT_MODEL);
 
   const [loading, setLoading] = useState(false);
 
   const [response, setResponse] = useState("");
 
-  const [metrics, setMetrics] = useState({
-    tokens: "--",
-    latency: "--",
-    cost: "--",
-  });
+  const [source, setSource] = useState("");
 
-  const [savedPrompts, setSavedPrompts] = useState(() => {
-    const saved = localStorage.getItem("promptpilot-prompts");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [metrics, setMetrics] = useState(EMPTY_METRICS);
+
+  const [savedPrompts, setSavedPrompts] = useState([]);
 
   useEffect(() => {
-    localStorage.setItem(
-      "promptpilot-prompts",
-      JSON.stringify(savedPrompts)
-    );
-  }, [savedPrompts]);
+    api
+      .fetchPrompts()
+      .then(setSavedPrompts)
+      .catch(() => toast.error("Could not load saved prompts."));
+  }, []);
 
-  const runPrompt = () => {
+  const runPrompt = async () => {
     if (!prompt.trim()) {
       toast.error("Please enter a prompt.");
       return;
@@ -42,38 +44,26 @@ export default function PromptStudio() {
 
     setLoading(true);
 
-    setTimeout(() => {
-      const lower = prompt.toLowerCase();
+    try {
+      const result = await api.runPrompt(prompt, model);
 
-      const result = fakeResponses.find((item) =>
-        item.keywords.some((k) => lower.includes(k))
-      );
+      setResponse(result.response);
 
-      if (result) {
-        setResponse(result.response);
+      setSource(result.source);
 
-        setMetrics({
-          tokens: result.tokens,
-          latency: result.latency,
-          cost: result.cost,
-        });
-      } else {
-        setResponse(
-          "Prompt analyzed successfully.\n\nThis is a demo version of PromptPilot.\nNo predefined response matched your prompt."
-        );
-
-        setMetrics({
-          tokens: 240,
-          latency: "1.3 sec",
-          cost: "$0.003",
-        });
-      }
-
+      setMetrics({
+        tokens: result.tokens,
+        latency: result.latency,
+        cost: result.cost,
+      });
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
-  const savePrompt = () => {
+  const savePrompt = async () => {
     if (!prompt.trim()) {
       toast.error("Please enter a prompt.");
       return;
@@ -84,41 +74,38 @@ export default function PromptStudio() {
       return;
     }
 
-    const alreadyExists = savedPrompts.some(
-      (item) => item.prompt === prompt
-    );
+    try {
+      const saved = await api.createPrompt({
+        title:
+          prompt.length > 35
+            ? prompt.substring(0, 35) + "..."
+            : prompt,
 
-    if (alreadyExists) {
-      toast.warning("Prompt already exists.");
-      return;
+        prompt,
+
+        response,
+
+        model,
+
+        source,
+
+        ...metrics,
+      });
+
+      setSavedPrompts((prev) => [saved, ...prev]);
+
+      toast.success("Prompt saved successfully!");
+    } catch (error) {
+      toast.warning(error.message);
     }
-
-    const newPrompt = {
-      id: Date.now(),
-
-      title:
-        prompt.length > 35
-          ? prompt.substring(0, 35) + "..."
-          : prompt,
-
-      prompt,
-
-      response,
-
-      model,
-
-      ...metrics,
-    };
-
-    setSavedPrompts((prev) => [newPrompt, ...prev]);
-
-    toast.success("Prompt saved successfully!");
   };
 
   const loadPrompt = (item) => {
     setPrompt(item.prompt);
 
     setResponse(item.response);
+
+    setSource(item.source || "");
 
     setMetrics({
       tokens: item.tokens,
@@ -131,12 +118,18 @@ export default function PromptStudio() {
     toast.success("Prompt loaded.");
   };
 
-  const deletePrompt = (id) => {
-    setSavedPrompts((prev) =>
-      prev.filter((item) => item.id !== id)
-    );
+  const deletePrompt = async (id) => {
+    try {
+      await api.deletePrompt(id);
 
-    toast.success("Prompt deleted.");
+      setSavedPrompts((prev) =>
+        prev.filter((item) => item.id !== id)
+      );
+
+      toast.success("Prompt deleted.");
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   const clearWorkspace = () => {
@@ -144,11 +137,9 @@ export default function PromptStudio() {
 
     setResponse("");
 
-    setMetrics({
-      tokens: "--",
-      latency: "--",
-      cost: "--",
-    });
+    setSource("");
+
+    setMetrics(EMPTY_METRICS);
 
     toast.success("Workspace cleared.");
   };
@@ -176,6 +167,7 @@ export default function PromptStudio() {
             metrics={metrics}
             loading={loading}
             model={model}
+            source={source}
           />
 
         </div>

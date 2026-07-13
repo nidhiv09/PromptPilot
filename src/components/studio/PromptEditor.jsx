@@ -19,6 +19,8 @@ import {
   Eraser,
 } from "lucide-react";
 
+import { MODELS } from "@/lib/models";
+
 export default function PromptEditor({
   prompt,
   setPrompt,
@@ -92,17 +94,11 @@ export default function PromptEditor({
 
             <SelectContent>
 
-              <SelectItem value="Claude Sonnet 4">
-                Claude Sonnet 4
-              </SelectItem>
-
-              <SelectItem value="GPT-4.1">
-                GPT-4.1
-              </SelectItem>
-
-              <SelectItem value="Gemini 2.5">
-                Gemini 2.5
-              </SelectItem>
+              {MODELS.map((item) => (
+                <SelectItem key={item.id} value={item.label}>
+                  {item.label}
+                </SelectItem>
+              ))}
 
             </SelectContent>
 

@@ -9,11 +9,14 @@ import {
   Bot,
 } from "lucide-react";
 
+import { MODELS } from "@/lib/models";
+
 export default function ResponseCard({
   response,
   metrics,
   loading,
   model,
+  source,
 }) {
   return (
     <Card className="mt-8 rounded-3xl border border-slate-800 bg-slate-900/70 shadow-2xl backdrop-blur">
@@ -45,12 +48,21 @@ export default function ResponseCard({
 
           </div>
 
-          <Badge
-            variant="outline"
-            className="border-violet-500/30 text-violet-300"
-          >
-            Demo
-          </Badge>
+          {source === "demo" ? (
+            <Badge
+              variant="outline"
+              className="border-violet-500/30 text-violet-300"
+            >
+              Demo
+            </Badge>
+          ) : source === "live" ? (
+            <Badge
+              variant="outline"
+              className="border-emerald-500/30 text-emerald-300"
+            >
+              Live
+            </Badge>
+          ) : null}
 
         </div>
 
@@ -180,26 +192,15 @@ export default function ResponseCard({
             Supports
           </span>
 
-          <Badge
-            variant="outline"
-            className="border-violet-500/30 text-violet-300"
-          >
-            Claude
-          </Badge>
-
-          <Badge
-            variant="outline"
-            className="border-cyan-500/30 text-cyan-300"
-          >
-            GPT
-          </Badge>
-
-          <Badge
-            variant="outline"
-            className="border-emerald-500/30 text-emerald-300"
-          >
-            Gemini
-          </Badge>
+          {MODELS.map((item) => (
+            <Badge
+              key={item.id}
+              variant="outline"
+              className="border-violet-500/30 text-violet-300"
+            >
+              {item.label}
+            </Badge>
+          ))}
 
         </div>
 

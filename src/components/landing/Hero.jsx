@@ -120,7 +120,7 @@ export default function Hero() {
       </h3>
 
       <p className="mt-4 leading-8 text-slate-400">
-        Switch between Claude, GPT and Gemini with a single click and compare outputs.
+        Switch between Llama and GPT-OSS models with a single click and compare outputs.
       </p>
 
     </div>
