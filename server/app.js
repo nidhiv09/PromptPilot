@@ -10,6 +10,28 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Diagnostic: reports config presence (never values) and the real DB error.
+// Declared before the DB middleware so it still answers when the DB is down.
+app.get("/api/health", async (_req, res) => {
+  const uri = process.env.MONGODB_URI || "";
+
+  const config = {
+    hasMongoUri: Boolean(uri),
+    mongoScheme: uri.split("://")[0] || null,
+    mongoHost: uri.split("@")[1]?.split("/")[0] || null,
+    hasMongoDb: Boolean(process.env.MONGODB_DB),
+    hasApiKey: isConfigured,
+  };
+
+  try {
+    const db = await connect();
+    await db.command({ ping: 1 });
+    res.json({ ok: true, config });
+  } catch (err) {
+    res.status(500).json({ ok: false, config, error: err.name, message: err.message });
+  }
+});
+
 // connect() is cached, so this is a no-op after the first request in a container.
 app.use(async (req, _res, next) => {
   try {
